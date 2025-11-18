@@ -1,12 +1,15 @@
 import { Router } from 'express';
-import { DashboardController } from './dashboard.controller.js';
+import { 
+  getDashboardStatsController, 
+  getProfitsByPeriodController, 
+  getSalesByProductTypeController 
+} from './dashboard.controller.js';
 
 const router = Router();
-const controller = new DashboardController();
 
-// Routes
-router.get('/', controller.getDashboardStats);
-router.get('/profits', controller.getProfitsByPeriod);
-router.get('/sales-by-type', controller.getSalesByProductType);
+// Define routes mapping to controller functions
+router.get('/', getDashboardStatsController);
+router.get('/profits', getProfitsByPeriodController);
+router.get('/sales-by-type', getSalesByProductTypeController);
 
 export default router;

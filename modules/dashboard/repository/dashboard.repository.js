@@ -1,149 +1,151 @@
-import prisma from '../../../config/prismaClient.js';
+import { getPrisma } from "../../../config/prismaClient.js";
 
-export class DashboardRepository {
-  /**
-   * إحصائيات Dashboard الشاملة
-   */
-  async getDashboardStats() {
-    // إجمالي الأرباح
-    const totalProfitResult = await prisma.فاتورة.aggregate({
-      _sum: { إجمالي_الربح: true },
-    });
+const prisma = getPrisma();
 
-    // عدد الفواتير
-    const invoiceCount = await prisma.فاتورة.count();
+/**
+ * إحصائيات Dashboard الشاملة
+ */
+export async function getDashboardStats() {
+  // إجمالي الأرباح
+  const totalProfitResult = await prisma.Invoice.aggregate({
+    _sum: { totalProfit: true },
+  });
 
-    // إحصائيات المخزون
-    const [silkStrips, irons, wires] = await Promise.all([
-      prisma.شرائط_حريرية.findMany(),
-      prisma.حديد.findMany(),
-      prisma.ويرات.findMany(),
-    ]);
+  // عدد الفواتير
+  const invoiceCount = await prisma.Invoice.count();
 
-    // حساب إجمالي الرصيد لكل نوع
-    const إجمالي_رصيد_شرائط = silkStrips.reduce((sum, item) => sum + item.رصيد, 0);
-    const إجمالي_رصيد_حديد = irons.reduce((sum, item) => sum + item.رصيد, 0);
-    const إجمالي_رصيد_ويرات = wires.reduce((sum, item) => sum + item.رصيد, 0);
+  // إحصائيات المخزون
+  const [silkStrips, irons, wires] = await Promise.all([
+    prisma.SilkStrip.findMany(),
+    prisma.Iron.findMany(),
+    prisma.Wire.findMany(),
+  ]);
 
-    // منتجات منخفضة المخزون (أقل من 10)
-    const lowStockItems = [
-      ...silkStrips.filter((item) => item.رصيد <= 10).map((item) => ({
-        النوع: 'شرائط_حريرية',
-        المعرف: item.id,
-        الرصيد: item.رصيد,
-      })),
-      ...irons.filter((item) => item.رصيد <= 10).map((item) => ({
-        النوع: 'حديد',
-        المعرف: item.id,
-        الوصف: item.وصف,
-        الرصيد: item.رصيد,
-      })),
-      ...wires.filter((item) => item.رصيد <= 10).map((item) => ({
-        النوع: 'ويرات',
-        المعرف: item.id,
-        الوصف: item.وصف,
-        الرصيد: item.رصيد,
-      })),
-    ];
+  // حساب إجمالي الرصيد (القيمة المالية) لكل نوع
+  const silkStripsBalance = silkStrips.reduce((sum, item) => sum + item.balance, 0);
+  const ironsBalance = irons.reduce((sum, item) => sum + item.balance, 0);
+  const wiresBalance = wires.reduce((sum, item) => sum + item.balance, 0);
 
-    // آخر 10 فواتير
-    const recentInvoices = await prisma.فاتورة.findMany({
+  // منتجات منخفضة المخزون (أقل من 10 في الكمية totalQuantity)
+  const lowStockItems = [
+    ...silkStrips.filter((item) => item.totalQuantity <= 10).map((item) => ({
+      type: 'silk_strip',
+      id: item.id,
+      name: item.name || 'شريط حريري',
+      quantity: item.totalQuantity,
+    })),
+    ...irons.filter((item) => item.totalQuantity <= 10).map((item) => ({
+      type: 'iron',
+      id: item.id,
+      name: item.description || item.name || 'حديد',
+      quantity: item.totalQuantity,
+    })),
+    ...wires.filter((item) => item.totalQuantity <= 10).map((item) => ({
+      type: 'wire',
+      id: item.id,
+      name: item.description || item.name || 'واير',
+      quantity: item.totalQuantity,
+    })),
+  ];
+
+  // آخر 10 فواتير
+  const recentInvoices = await prisma.Invoice.findMany({
+    include: {
+      details: true,
+    },
+    orderBy: { invoiceDate: 'desc' },
+    take: 10,
+  });
+
+  // آخر 10 حركات مخزون
+  const recentMovements = await prisma.StockMovement.findMany({
+    orderBy: { movementDate: 'desc' },
+    take: 10,
+  });
+
+  return {
+    totalProfit: totalProfitResult._sum.totalProfit || 0,
+    invoiceCount: invoiceCount,
+    inventory: {
+      silk_strips: {
+        count: silkStrips.length,
+        totalBalance: silkStripsBalance,
+      },
+      irons: {
+        count: irons.length,
+        totalBalance: ironsBalance,
+      },
+      wires: {
+        count: wires.length,
+        totalBalance: wiresBalance,
+      },
+    },
+    totalInventoryBalance: silkStripsBalance + ironsBalance + wiresBalance,
+    lowStockItems: lowStockItems,
+    recentInvoices: recentInvoices,
+    recentMovements: recentMovements,
+  };
+}
+
+/**
+ * إحصائيات الأرباح حسب الفترة الزمنية
+ */
+export async function getProfitsByPeriod(fromDate, toDate) {
+  const where = {};
+
+  if (fromDate && toDate) {
+    where.invoiceDate = {
+      gte: new Date(fromDate),
+      lte: new Date(toDate),
+    };
+  }
+
+  const [totalProfitResult, invoices] = await Promise.all([
+    prisma.Invoice.aggregate({
+      where,
+      _sum: { totalProfit: true },
+    }),
+
+    prisma.Invoice.findMany({
+      where,
       include: {
-        تفاصيل: true,
+        details: true,
       },
-      orderBy: { التاريخ: 'desc' },
-      take: 10,
-    });
+      orderBy: { invoiceDate: 'desc' },
+    }),
+  ]);
 
-    // آخر 10 حركات مخزون
-    const recentMovements = await prisma.حركة_مخزون.findMany({
-      orderBy: { التاريخ: 'desc' },
-      take: 10,
-    });
+  return {
+    period: {
+      from: fromDate,
+      to: toDate,
+    },
+    totalProfit: totalProfitResult._sum.totalProfit || 0,
+    invoiceCount: invoices.length,
+    invoices: invoices,
+  };
+}
 
-    return {
-      إجمالي_الأرباح: totalProfitResult._sum.إجمالي_الربح || 0,
-      عدد_الفواتير: invoiceCount,
-      المخزون: {
-        شرائط_حريرية: {
-          العدد: silkStrips.length,
-          إجمالي_الرصيد: إجمالي_رصيد_شرائط,
-        },
-        حديد: {
-          العدد: irons.length,
-          إجمالي_الرصيد: إجمالي_رصيد_حديد,
-        },
-        ويرات: {
-          العدد: wires.length,
-          إجمالي_الرصيد: إجمالي_رصيد_ويرات,
-        },
-      },
-      إجمالي_الرصيد: إجمالي_رصيد_شرائط + إجمالي_رصيد_حديد + إجمالي_رصيد_ويرات,
-      منتجات_منخفضة_المخزون: lowStockItems,
-      آخر_الفواتير: recentInvoices,
-      آخر_حركات_المخزون: recentMovements,
-    };
-  }
+/**
+ * إحصائيات المبيعات حسب نوع المنتج
+ */
+export async function getSalesByProductType() {
+  const details = await prisma.InvoiceDetail.findMany();
 
-  /**
-   * إحصائيات الأرباح حسب الفترة الزمنية
-   */
-  async getProfitsByPeriod(من_تاريخ, إلى_تاريخ) {
-    const where = {};
+  const stats = {
+    silk_strip: { quantity: 0, profit: 0, transactions: 0 },
+    iron: { quantity: 0, profit: 0, transactions: 0 },
+    wire: { quantity: 0, profit: 0, transactions: 0 },
+  };
 
-    if (من_تاريخ && إلى_تاريخ) {
-      where.التاريخ = {
-        gte: new Date(من_تاريخ),
-        lte: new Date(إلى_تاريخ),
-      };
+  details.forEach((detail) => {
+    // تأكد من أن productType موجود في stats (لتجنب الأخطاء في حالة وجود أنواع قديمة)
+    if (stats[detail.productType]) {
+      stats[detail.productType].quantity += detail.quantity;
+      stats[detail.productType].profit += detail.profit;
+      stats[detail.productType].transactions += 1;
     }
+  });
 
-    const [totalProfitResult, invoices] = await Promise.all([
-      prisma.فاتورة.aggregate({
-        where,
-        _sum: { إجمالي_الربح: true },
-      }),
-
-      prisma.فاتورة.findMany({
-        where,
-        include: {
-          تفاصيل: true,
-        },
-        orderBy: { التاريخ: 'desc' },
-      }),
-    ]);
-
-    return {
-      الفترة: {
-        من: من_تاريخ,
-        إلى: إلى_تاريخ,
-      },
-      إجمالي_الأرباح: totalProfitResult._sum.إجمالي_الربح || 0,
-      عدد_الفواتير: invoices.length,
-      الفواتير: invoices,
-    };
-  }
-
-  /**
-   * إحصائيات المبيعات حسب نوع المنتج
-   */
-  async getSalesByProductType() {
-    const details = await prisma.تفاصيل_فاتورة.findMany();
-
-    const stats = {
-      شرائط_حريرية: { الكمية: 0, الأرباح: 0, عدد_العمليات: 0 },
-      حديد: { الكمية: 0, الأرباح: 0, عدد_العمليات: 0 },
-      ويرات: { الكمية: 0, الأرباح: 0, عدد_العمليات: 0 },
-    };
-
-    details.forEach((detail) => {
-      if (stats[detail.النوع]) {
-        stats[detail.النوع].الكمية += detail.الكمية;
-        stats[detail.النوع].الأرباح += detail.الربح;
-        stats[detail.النوع].عدد_العمليات += 1;
-      }
-    });
-
-    return stats;
-  }
+  return stats;
 }

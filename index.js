@@ -6,6 +6,7 @@ import WireRoute from "./modules/wires/presentation/wires.route.js";
 import SilkStripRoute from "./modules/silk_strips/presentation/silk_strips.route.js";
 import StockRoute from "./modules/stock/presentation/stock.route.js";
 import InvoiceRoute from "./modules/invoices/presentation/invoices.route.js";
+import DashboardRoute from "./modules/dashboard/presentation/dashboard.route.js";
 
 import globalErrorFilter from "./shared/filters/global_error.filter.js";
 
@@ -22,6 +23,7 @@ app.use("/wires", WireRoute);
 app.use("/silk-strips", SilkStripRoute);
 app.use("/stock", StockRoute);
 app.use("/invoices", InvoiceRoute);
+app.use("/dashboard", DashboardRoute);
 
 app.use(globalErrorFilter);
 

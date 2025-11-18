@@ -5,7 +5,7 @@ export function asyncHandler(fn) {
 }
 
 export default function globalErrorFilter(err, req, res, next) {
-  const { type, message:errorText } = err;
+  const { type, message: errorText } = err;
 
   let status = 500;
   let message;
@@ -20,25 +20,25 @@ export default function globalErrorFilter(err, req, res, next) {
   } else if (type === "BusinessLogicError") {
     status = 409;
     errorCode = "CONFLICT";
-  }
-  else if (type === "NotAuthorizedError") {
+  } else if (type === "NotFoundError") {
+    // FIX: Added handler for NotFoundError
+    status = 404;
+    errorCode = "NOT_FOUND";
+  } else if (type === "NotAuthorizedError") {
     status = 403;
     errorCode = "FORBIDDEN";
-  }
-  else if (type === "UnAuthorizedError") {
+  } else if (type === "UnAuthorizedError") {
     status = 401;
     errorCode = "UNAUTHORIZED";
-  }
-  else if (type === "InvalidTokenError") {
+  } else if (type === "InvalidTokenError") {
     status = 498;
     errorCode = "INVALID_TOKEN";
-  }
-  else if (type === "AuthenticationError") {
+  } else if (type === "AuthenticationError") {
     status = 401;
     errorCode = "AUTHENTICATION_FAILED";
   }
 
-  message = errorText;
+  message = errorText || "An unexpected error occurred";
 
   const response = {
     status,
