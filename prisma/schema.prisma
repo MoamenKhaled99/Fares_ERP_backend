@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// شرائط حريرية
+model SilkStrip {
+  id              Int      @id @default(autoincrement())
+  loadCapacity    Float?   // حمولة الطن
+  safetyFactor    Float?   // معامل الأمان
+  unitPrice       Float    // سعر الوحدة
+  totalQuantity   Float    @default(0) // إجمالي الكمية
+  balance         Float    @default(0) // الرصيد (الكمية × السعر)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// حديد
+model Iron {
+  id              Int      @id @default(autoincrement())
+  description     String?  // الوصف
+  unitPrice       Float    // سعر الوحدة
+  totalQuantity   Float    @default(0) // إجمالي الكمية
+  balance         Float    @default(0) // الرصيد (الكمية × السعر)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ويرات
+model Wire {
+  id              Int      @id @default(autoincrement())
+  description     String?  // الوصف
+  unitPrice       Float    // سعر الوحدة
+  totalQuantity   Float    @default(0) // إجمالي الكمية
+  balance         Float    @default(0) // الرصيد (الكمية × السعر)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// حركة المخزون
+model StockMovement {
+  id                Int      @id @default(autoincrement())
+  productType       String   // نوع المنتج: silk_strip, iron, wire
+  productId         Int      // معرف المنتج
+  quantity          Float    // الكمية
+  movementType      String   // نوع الحركة: in, out
+  movementDate      DateTime @default(now()) // تاريخ الحركة
+  purchasePrice     Float    // السعر عند الشراء
+  notes             String?  // ملاحظات
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([productType])
+  @@index([movementType])
+  @@index([productId])
+}
+
+// فاتورة
+model Invoice {
+  id                Int      @id @default(autoincrement())
+  invoiceDate       DateTime @default(now()) // تاريخ الفاتورة
+  totalProfit       Float    @default(0) // إجمالي الربح
+  notes             String?  // ملاحظات
+  details           InvoiceDetail[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// تفاصيل الفاتورة
+model InvoiceDetail {
+  id                Int      @id @default(autoincrement())
+  invoiceId         Int      // معرف الفاتورة
+  productType       String   // نوع المنتج: silk_strip, iron, wire
+  productId         Int      // معرف المنتج
+  quantity          Float    // الكمية
+  purchasePrice     Float    // سعر الشراء (من unitPrice للمنتج)
+  sellingPrice      Float    // سعر البيع
+  profit            Float    @default(0) // الربح = (sellingPrice - purchasePrice) * quantity
+
+  invoice           Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId])
+  @@index([productType])
+}
