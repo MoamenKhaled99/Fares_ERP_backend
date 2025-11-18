@@ -17,7 +17,7 @@ async function addWires(wiresData) {
     productType: 'wire',
     productId: createdWire.id,
     quantity: createdWire.totalQuantity,
-    movementType: 'out',
+    movementType: 'in',
     purchasePrice: createdWire.unitPrice,
     notes: `Auto-generated movement for new wire product ID: ${createdWire.id}`,
   });

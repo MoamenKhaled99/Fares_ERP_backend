@@ -18,7 +18,7 @@ async function addSilkStrips(silkStripsData) {
     productType: 'silk_strip',
     productId: createdSilkStrip.id,
     quantity: createdSilkStrip.totalQuantity,
-    movementType: 'out',
+    movementType: 'in',
     purchasePrice: createdSilkStrip.unitPrice,
     notes: `Auto-generated movement for new silk strip product ID: ${createdSilkStrip.id}`,
   });

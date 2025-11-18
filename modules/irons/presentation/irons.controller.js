@@ -35,4 +35,20 @@ async function deleteIronController(req, res) {
     res.status(204).send();
 }
 
-export { addIronsController, getAllIronsController, getIronByIdController, updateIronController, deleteIronController };
+async function addStockController(req, res) {
+    const { id } = req.params;
+    const { الكمية, السعر, notes } = req.body; 
+    
+    // Map Arabic frontend keys to English backend keys
+    const data = {
+      productType: 'iron', // Change to 'wire' or 'silk_strip' in other modules
+      productId: parseInt(id),
+      quantity: parseFloat(الكمية),
+      purchasePrice: parseFloat(السعر),
+      notes: notes,
+    };
+    const movement = await addIncomingMovement(data);
+    res.status(200).json(movement);
+}
+
+export { addIronsController, getAllIronsController, getIronByIdController, updateIronController, deleteIronController, addStockController };

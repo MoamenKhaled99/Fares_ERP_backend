@@ -1,13 +1,13 @@
-import { 
-  getAllStockMovements, 
-  getStockMovementsByProductType, 
+import {
+  getAllStockMovements,
+  getStockMovementsByProductType,
   getStockMovementsByProductId,
   createStockMovement,
   updateStockMovement,
   deleteStockMovement,
   getProductBalance,
-  updateProductBalance 
-} from '../repository/stock.repository.js';
+  updateProductBalance,
+} from "../repository/stock.repository.js";
 
 // جلب جميع حركات المخزون
 export async function fetchAllStockMovements() {
@@ -16,7 +16,7 @@ export async function fetchAllStockMovements() {
 
 // جلب حركات حسب نوع المنتج
 export async function getMovementsByType(productType) {
-  const validTypes = ['silk_strip', 'iron', 'wire'];
+  const validTypes = ["silk_strip", "iron", "wire"];
   if (!validTypes.includes(productType)) {
     const err = {
       message: "Invalid product type",
@@ -35,16 +35,25 @@ export async function getMovementsByProduct(productId) {
 // إضافة حركة مخزون (وارد)
 export async function addIncomingMovement(data) {
   // التحقق من البيانات
-  if (!data.productType || !data.productId || !data.quantity || !data.purchasePrice) {
+  if (
+    !data.productType ||
+    !data.productId ||
+    !data.quantity ||
+    !data.purchasePrice
+  ) {
     const err = {
-      message: "Missing required fields: productType, productId, quantity, purchasePrice",
+      message:
+        "Missing required fields: productType, productId, quantity, purchasePrice",
       type: "ValidationError",
     };
     throw err;
   }
 
   // الحصول على الرصيد الحالي
-  const currentBalance = await getProductBalance(data.productType, data.productId);
+  const currentBalance = await getProductBalance(
+    data.productType,
+    data.productId
+  );
   if (!currentBalance) {
     const err = {
       message: "Product not found",
@@ -55,20 +64,26 @@ export async function addIncomingMovement(data) {
 
   // حساب الرصيد الجديد
   const newQuantity = currentBalance.totalQuantity + data.quantity;
-  const newBalance = newQuantity * (data.purchasePrice || 0);
+  const costOfNewStock = data.quantity * data.purchasePrice;
+  const newBalance = currentBalance.balance + costOfNewStock; // New balance = old balance + cost of new stock
 
   // إنشاء حركة المخزون
   const movement = await createStockMovement({
     productType: data.productType,
     productId: data.productId,
     quantity: data.quantity,
-    movementType: 'in',
+    movementType: "in",
     purchasePrice: data.purchasePrice,
     notes: data.notes,
   });
 
   // تحديث رصيد المنتج
-  await updateProductBalance(data.productType, data.productId, newQuantity, newBalance);
+  await updateProductBalance(
+    data.productType,
+    data.productId,
+    newQuantity,
+    newBalance
+  );
 
   return movement;
 }

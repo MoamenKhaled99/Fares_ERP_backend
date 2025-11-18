@@ -18,7 +18,7 @@ async function addIrons(ironsData) {
     productType: 'iron',
     productId: createdIron.id,
     quantity: createdIron.totalQuantity,
-    movementType: 'out',
+    movementType: 'in',
     purchasePrice: createdIron.unitPrice,
     notes: `Auto-generated movement for new iron product ID: ${createdIron.id}`,
   });

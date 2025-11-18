@@ -5,7 +5,7 @@ const prisma = getPrisma();
 // جلب جميع حركات المخزون
 export async function getAllStockMovements() {
   return await prisma.StockMovement.findMany({
-    orderBy: { movementDate: 'desc' },
+    orderBy: { movementDate: "desc" },
   });
 }
 
@@ -13,7 +13,7 @@ export async function getAllStockMovements() {
 export async function getStockMovementsByProductType(productType) {
   return await prisma.StockMovement.findMany({
     where: { productType },
-    orderBy: { movementDate: 'desc' },
+    orderBy: { movementDate: "desc" },
   });
 }
 
@@ -21,7 +21,7 @@ export async function getStockMovementsByProductType(productType) {
 export async function getStockMovementsByProductId(productId) {
   return await prisma.StockMovement.findMany({
     where: { productId },
-    orderBy: { movementDate: 'desc' },
+    orderBy: { movementDate: "desc" },
   });
 }
 
@@ -47,17 +47,17 @@ export async function deleteStockMovement(id) {
 
 // جلب رصيد المنتج الحالي
 export async function getProductBalance(productType, productId) {
-  if (productType === 'silk_strip') {
+  if (productType === "silk_strip") {
     return await prisma.SilkStrip.findUnique({
       where: { id: productId },
       select: { totalQuantity: true, balance: true },
     });
-  } else if (productType === 'iron') {
+  } else if (productType === "iron") {
     return await prisma.Iron.findUnique({
       where: { id: productId },
       select: { totalQuantity: true, balance: true },
     });
-  } else if (productType === 'wire') {
+  } else if (productType === "wire") {
     return await prisma.Wire.findUnique({
       where: { id: productId },
       select: { totalQuantity: true, balance: true },
@@ -67,21 +67,28 @@ export async function getProductBalance(productType, productId) {
 }
 
 // تحديث رصيد المنتج بعد عملية مخزون
-export async function updateProductBalance(productType, productId, totalQuantity, balance) {
-  if (productType === 'silk_strip') {
+export async function updateProductBalance(
+  productType,
+  productId,
+  totalQuantity,
+  balance
+) {
+  const updateData = { totalQuantity, balance };
+
+  if (productType === "silk_strip") {
     return await prisma.SilkStrip.update({
       where: { id: productId },
-      data: { totalQuantity, balance },
+      data: updateData, // ✅ ONLY UPDATES quantity/balance
     });
-  } else if (productType === 'iron') {
+  } else if (productType === "iron") {
     return await prisma.Iron.update({
       where: { id: productId },
-      data: { totalQuantity, balance },
+      data: updateData, // ✅ ONLY UPDATES quantity/balance
     });
-  } else if (productType === 'wire') {
+  } else if (productType === "wire") {
     return await prisma.Wire.update({
       where: { id: productId },
-      data: { totalQuantity, balance },
+      data: updateData, // ✅ ONLY UPDATES quantity/balance
     });
   }
   return null;
