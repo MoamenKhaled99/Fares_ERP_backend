@@ -11,6 +11,8 @@ import {
   validateWireUpdate,
 } from "./wires.validation.js";
 
+import { addIncomingMovement } from "../../stock/service/stock.service.js"; // ✅ Import
+
 async function addWiresController(req, res) {
   const wiresData = req.body;
   validateWire(wiresData);

@@ -50,17 +50,17 @@ export async function getProductBalance(productType, productId) {
   if (productType === "silk_strip") {
     return await prisma.SilkStrip.findUnique({
       where: { id: productId },
-      select: { totalQuantity: true, balance: true },
+      select: { totalQuantity: true, balance: true, unitPrice: true }, // ✅ Added unitPrice
     });
   } else if (productType === "iron") {
     return await prisma.Iron.findUnique({
       where: { id: productId },
-      select: { totalQuantity: true, balance: true },
+      select: { totalQuantity: true, balance: true, unitPrice: true }, // ✅ Added unitPrice
     });
   } else if (productType === "wire") {
     return await prisma.Wire.findUnique({
       where: { id: productId },
-      select: { totalQuantity: true, balance: true },
+      select: { totalQuantity: true, balance: true, unitPrice: true }, // ✅ Added unitPrice
     });
   }
   return null;

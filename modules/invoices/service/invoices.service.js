@@ -40,40 +40,36 @@ export async function createInvoiceService(data) {
     throw err;
   }
 
-  // معالجة التفاصيل: جلب purchasePrice من المنتج إذا لم تكن موجودة
   const processedDetails = [];
   let totalProfit = 0;
 
   for (const detail of data.details) {
     const { productType, productId, quantity, sellingPrice } = detail;
     
-    // جلب purchasePrice من المنتج
-    let purchasePrice = detail.purchasePrice;
-    if (!purchasePrice) {
-      const product = await getProductBalance(productType, productId);
-      if (!product) {
-        const err = {
-          message: `Product not found: ${productType} ID ${productId}`,
-          type: "NotFoundError",
-        };
-        throw err;
-      }
-      // الحصول على unitPrice من المنتج
-      let unitPrice = 0;
-      if (productType === 'silk_strip') {
-        const silkStrip = await prisma.SilkStrip.findUnique({ where: { id: productId } });
-        unitPrice = silkStrip?.unitPrice || 0;
-      } else if (productType === 'iron') {
-        const iron = await prisma.Iron.findUnique({ where: { id: productId } });
-        unitPrice = iron?.unitPrice || 0;
-      } else if (productType === 'wire') {
-        const wire = await prisma.Wire.findUnique({ where: { id: productId } });
-        unitPrice = wire?.unitPrice || 0;
-      }
-      purchasePrice = unitPrice;
+    // 1. Fetch current product data for stock, balance, and unitPrice
+    // NOTE: getProductBalance in stock.repository.js must be updated to fetch unitPrice
+    const product = await getProductBalance(productType, productId); 
+    
+    if (!product) {
+      const err = {
+        message: `Product not found: ${productType} ID ${productId}`,
+        type: "NotFoundError",
+      };
+      throw err;
     }
 
-    // حساب الربح
+    // ✅ STOCK CHECK: Do not proceed if requested quantity > current stock
+    if (quantity > product.totalQuantity) {
+      const err = {
+message: `المخزون غير كافٍ للمنتج برقم ${productId} (${productType}). المتوفر: ${product.totalQuantity}، المطلوب: ${quantity}`, // 👈 Arabic Message        type: "BusinessLogicError", // Throws a 409 Conflict error
+      };
+      throw err;
+    }
+    
+    // 2. Determine purchasePrice: use price from payload, or product's current unitPrice
+    const purchasePrice = detail.purchasePrice || product.unitPrice; 
+
+    // 3. Calculate profit
     const profit = (sellingPrice - purchasePrice) * quantity;
     totalProfit += profit;
 
@@ -87,8 +83,7 @@ export async function createInvoiceService(data) {
     });
   }
 
-  // إنشاء الفاتورة مع التفاصيل
-  // Pass details as an array to match repository.createInvoice expectations
+  // 4. Create invoice and process stock movements
   const invoice = await createInvoice({
     totalProfit,
     notes: data.notes,
@@ -99,12 +94,14 @@ export async function createInvoiceService(data) {
   for (const detail of processedDetails) {
     const { productType, productId, quantity, purchasePrice } = detail;
 
-    // الحصول على رصيد المنتج الحالي
+    // Fetch current state again in case of concurrent access
     const currentBalance = await getProductBalance(productType, productId);
     if (currentBalance) {
       // حساب الكمية والرصيد الجديدة
       const newQuantity = Math.max(0, currentBalance.totalQuantity - quantity);
-      const newBalance = newQuantity * purchasePrice;
+      
+      // Calculate new balance: remaining quantity * original purchase price (simplistic cost valuation)
+      const newBalance = newQuantity * purchasePrice; 
 
       // تحديث رصيد المنتج
       await updateProductBalance(productType, productId, newQuantity, newBalance);

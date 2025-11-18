@@ -11,6 +11,8 @@ import {
   validateSilkStripUpdate,
 } from "./silk_strips.validation.js";
 
+import { addIncomingMovement } from "../../stock/service/stock.service.js"; // ✅ Import
+
 async function addSilkStripsController(req, res) {
   const silkStripsData = req.body;
   validateSilkStrip(silkStripsData);
