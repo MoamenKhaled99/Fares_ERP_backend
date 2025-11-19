@@ -3,15 +3,29 @@ import { getPrisma } from "../../../config/prismaClient.js";
 const prisma = getPrisma();
 
 // جلب جميع الفواتير
-export async function getAllInvoices() {
+// جلب جميع الفواتير (with optional date filtering)
+export async function getAllInvoices(filters = {}) {
+  const whereClause = {};
+  
+  // Add date range filtering if provided
+  if (filters.from_date || filters.to_date) {
+    whereClause.invoiceDate = {};
+    if (filters.from_date) {
+      whereClause.invoiceDate.gte = new Date(filters.from_date);
+    }
+    if (filters.to_date) {
+      whereClause.invoiceDate.lte = new Date(filters.to_date);
+    }
+  }
+  
   return await prisma.Invoice.findMany({
+    where: whereClause,
     include: {
       details: true,
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { invoiceDate: 'desc' }, // Changed from createdAt to invoiceDate
   });
 }
-
 // جلب فاتورة بواسطة ID
 export async function getInvoiceById(id) {
   return await prisma.Invoice.findUnique({

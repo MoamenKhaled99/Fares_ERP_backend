@@ -10,8 +10,8 @@ import {
 } from "../repository/stock.repository.js";
 
 // جلب جميع حركات المخزون
-export async function fetchAllStockMovements() {
-  return await getAllStockMovements();
+export async function fetchAllStockMovements(filters = {}) {
+  return await getAllStockMovements(filters);
 }
 
 // جلب حركات حسب نوع المنتج

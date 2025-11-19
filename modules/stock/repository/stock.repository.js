@@ -3,8 +3,21 @@ import { getPrisma } from "../../../config/prismaClient.js";
 const prisma = getPrisma();
 
 // جلب جميع حركات المخزون
-export async function getAllStockMovements() {
+export async function getAllStockMovements(filters = {}) {
+  const whereClause = {};
+  
+  if (filters.from_date || filters.to_date) {
+    whereClause.movementDate = {};
+    if (filters.from_date) {
+      whereClause.movementDate.gte = new Date(filters.from_date);
+    }
+    if (filters.to_date) {
+      whereClause.movementDate.lte = new Date(filters.to_date);
+    }
+  }
+  
   return await prisma.StockMovement.findMany({
+    where: whereClause,
     orderBy: { movementDate: "desc" },
   });
 }

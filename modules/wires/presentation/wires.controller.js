@@ -53,7 +53,7 @@ async function addStockController(req, res) {
 
   // Map Arabic frontend keys to English backend keys
   const data = {
-    productType: "iron", // Change to 'wire' or 'silk_strip' in other modules
+    productType: "wire", // Change to 'wire' or 'silk_strip' in other modules
     productId: parseInt(id),
     quantity: parseFloat(الكمية),
     purchasePrice: parseFloat(السعر),

@@ -6,14 +6,18 @@ import {
   deleteInvoice,
   calculateTotalProfits,
 } from "../repository/invoices.repository.js";
-import { createStockMovement, getProductBalance, updateProductBalance } from "../../stock/repository/stock.repository.js";
+import {
+  createStockMovement,
+  getProductBalance,
+  updateProductBalance,
+} from "../../stock/repository/stock.repository.js";
 import { getPrisma } from "../../../config/prismaClient.js";
 
 const prisma = getPrisma();
 
 // جلب جميع الفواتير
-export async function fetchAllInvoices() {
-  return await getAllInvoices();
+export async function fetchAllInvoices(filters = {}) {
+  return await getAllInvoices(filters);
 }
 
 // جلب فاتورة بواسطة ID
@@ -45,11 +49,11 @@ export async function createInvoiceService(data) {
 
   for (const detail of data.details) {
     const { productType, productId, quantity, sellingPrice } = detail;
-    
+
     // 1. Fetch current product data for stock, balance, and unitPrice
     // NOTE: getProductBalance in stock.repository.js must be updated to fetch unitPrice
-    const product = await getProductBalance(productType, productId); 
-    
+    const product = await getProductBalance(productType, productId);
+
     if (!product) {
       const err = {
         message: `Product not found: ${productType} ID ${productId}`,
@@ -61,13 +65,13 @@ export async function createInvoiceService(data) {
     // ✅ STOCK CHECK: Do not proceed if requested quantity > current stock
     if (quantity > product.totalQuantity) {
       const err = {
-message: `المخزون غير كافٍ للمنتج برقم ${productId} (${productType}). المتوفر: ${product.totalQuantity}، المطلوب: ${quantity}`, // 👈 Arabic Message        type: "BusinessLogicError", // Throws a 409 Conflict error
+        message: `المخزون غير كافٍ للمنتج برقم ${productId} (${productType}). المتوفر: ${product.totalQuantity}، المطلوب: ${quantity}`, // 👈 Arabic Message        type: "BusinessLogicError", // Throws a 409 Conflict error
       };
       throw err;
     }
-    
+
     // 2. Determine purchasePrice: use price from payload, or product's current unitPrice
-    const purchasePrice = detail.purchasePrice || product.unitPrice; 
+    const purchasePrice = detail.purchasePrice || product.unitPrice;
 
     // 3. Calculate profit
     const profit = (sellingPrice - purchasePrice) * quantity;
@@ -99,19 +103,24 @@ message: `المخزون غير كافٍ للمنتج برقم ${productId} (${p
     if (currentBalance) {
       // حساب الكمية والرصيد الجديدة
       const newQuantity = Math.max(0, currentBalance.totalQuantity - quantity);
-      
+
       // Calculate new balance: remaining quantity * original purchase price (simplistic cost valuation)
-      const newBalance = newQuantity * purchasePrice; 
+      const newBalance = newQuantity * purchasePrice;
 
       // تحديث رصيد المنتج
-      await updateProductBalance(productType, productId, newQuantity, newBalance);
+      await updateProductBalance(
+        productType,
+        productId,
+        newQuantity,
+        newBalance
+      );
 
       // إنشاء حركة مخزون (خروج)
       await createStockMovement({
         productType,
         productId,
         quantity,
-        movementType: 'out',
+        movementType: "out",
         purchasePrice,
         notes: `Invoice #${invoice.id} - Outgoing movement`,
       });

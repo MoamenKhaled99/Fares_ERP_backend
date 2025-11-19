@@ -47,18 +47,18 @@ async function deleteSilkStripController(req, res) {
   res.status(204).send();
 }
 
-async function addStockController(req, res) {
-  const { id } = req.params;
-  const { الكمية, السعر, notes } = req.body;
+  async function addStockController(req, res) {
+    const { id } = req.params;
+    const { الكمية, السعر, notes } = req.body;
 
-  // Map Arabic frontend keys to English backend keys
-  const data = {
-    productType: "iron", // Change to 'wire' or 'silk_strip' in other modules
-    productId: parseInt(id),
-    quantity: parseFloat(الكمية),
-    purchasePrice: parseFloat(السعر),
-    notes: notes,
-  };
+    // Map Arabic frontend keys to English backend keys
+    const data = {
+      productType: "silk_strip", // Change to 'wire' or 'silk_strip' in other modules
+      productId: parseInt(id),
+      quantity: parseFloat(الكمية),
+      purchasePrice: parseFloat(السعر),
+      notes: notes,
+    };
 
   // The stock validation should pass as we are supplying required fields
   // The stock service will handle the rest.

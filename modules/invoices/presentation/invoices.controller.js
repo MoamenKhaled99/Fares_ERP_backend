@@ -10,9 +10,17 @@ import { validateInvoice, validateInvoiceId } from "./invoices.validation.js";
 
 // جلب جميع الفواتير
 async function getAllInvoicesController(req, res) {
-  const invoices = await fetchAllInvoices();
+  const { from_date, to_date } = req.query;
+  
+  // Build filters object
+  const filters = {};
+  if (from_date) filters.from_date = from_date;
+  if (to_date) filters.to_date = to_date;
+  
+  const invoices = await fetchAllInvoices(filters);
   res.status(200).json(invoices);
 }
+
 
 // جلب فاتورة بواسطة ID
 async function getInvoiceByIdController(req, res) {

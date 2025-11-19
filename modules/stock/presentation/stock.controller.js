@@ -13,7 +13,13 @@ import {
 
 // جلب جميع حركات المخزون
 async function getAllMovementsController(req, res) {
-  const movements = await fetchAllStockMovements();
+  const { from_date, to_date } = req.query;
+  
+  const filters = {};
+  if (from_date) filters.from_date = from_date;
+  if (to_date) filters.to_date = to_date;
+  
+  const movements = await fetchAllStockMovements(filters);
   res.status(200).json(movements);
 }
 
