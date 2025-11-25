@@ -16,6 +16,7 @@ async function addWires(wiresData) {
   await createStockMovement({
     productType: 'wire',
     productId: createdWire.id,
+    productName: createdWire.description,
     quantity: createdWire.totalQuantity,
     movementType: 'in',
     purchasePrice: createdWire.unitPrice,
@@ -25,8 +26,8 @@ async function addWires(wiresData) {
   return createdWire;
 }
 
-async function fetchAllWires() {
-  return await getAllWires();
+async function fetchAllWires(search = '') {
+  return await getAllWires(search);
 }
 
 async function getWireByIdService(id) {

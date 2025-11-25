@@ -17,6 +17,7 @@ async function addIrons(ironsData) {
   await createStockMovement({
     productType: 'iron',
     productId: createdIron.id,
+    productName: createdIron.description,
     quantity: createdIron.totalQuantity,
     movementType: 'in',
     purchasePrice: createdIron.unitPrice,
@@ -26,8 +27,8 @@ async function addIrons(ironsData) {
   return createdIron;
 }
 
-async function fetchAllIrons() {
-  return await getAllIrons();
+async function fetchAllIrons(search = '') {
+  return await getAllIrons(search);
 }
 
 async function getIronByIdService(id) {

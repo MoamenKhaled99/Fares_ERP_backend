@@ -21,7 +21,8 @@ async function addIronsController(req, res) {
 }
 
 async function getAllIronsController(req, res) {
-  const irons = await fetchAllIrons();
+  const { search } = req.query;
+  const irons = await fetchAllIrons(search || '');
   res.status(200).json(irons);
 }
 

@@ -8,19 +8,30 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// شرائط حريرية
-model SilkStrip {
+// معدلات معامل الأمان
+model SafetyFactorRate {
   id              Int      @id @default(autoincrement())
-  loadCapacity    Float?   // حمولة الطن
-  safetyFactor    Float?   // معامل الأمان
-  unitPrice       Float    // سعر الوحدة
-  totalQuantity   Float    @default(0) // إجمالي الكمية
-  balance         Float    @default(0) // الرصيد (الكمية × السعر)
+  factor          String   @unique // معامل الأمان: "1:5", "1:6", "1:7"
+  rate            Float    // السعر للوحدة (مثال: 24 لـ 1:6)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
 
-// حديد
+// شرائط حريرية
+model SilkStrip {
+  id              Int      @id @default(autoincrement())
+  loadCapacity    Float    // حمولة الطن
+  safetyFactor    String   // معامل الأمان: "1:5", "1:6", "1:7"
+  unitMeter       Float    // الوحدة بالمتر
+  unitPrice       Float    // سعر الوحدة (محسوب تلقائياً: rate * unitMeter * loadCapacity)
+  totalQuantity   Float    @default(0) // إجمالي الكمية
+  balance         Float    @default(0) // الرصيد (الكمية × السعر)
+  displayName     String?  // اسم العرض: "loadCapacity x unitMeter x safetyFactor"
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// حدايد
 model Iron {
   id              Int      @id @default(autoincrement())
   description     String?  // الوصف
@@ -47,6 +58,7 @@ model StockMovement {
   id                Int      @id @default(autoincrement())
   productType       String   // نوع المنتج: silk_strip, iron, wire
   productId         Int      // معرف المنتج
+  productName       String?  // اسم المنتج أو الوصف
   quantity          Float    // الكمية
   movementType      String   // نوع الحركة: in, out
   movementDate      DateTime @default(now()) // تاريخ الحركة
@@ -64,7 +76,8 @@ model StockMovement {
 // فاتورة
 model Invoice {
   id                Int      @id @default(autoincrement())
-  invoiceDate       DateTime @default(now()) // تاريخ الفاتورة
+  invoiceDate       DateTime // تاريخ الفاتورة (يمكن تحدايده يدوياً أو تلقائياً)
+  invoiceType       String   @default("regular") // نوع الفاتورة: regular, non-stock
   totalProfit       Float    @default(0) // إجمالي الربح
   notes             String?  // ملاحظات
   details           InvoiceDetail[]
@@ -77,7 +90,8 @@ model InvoiceDetail {
   id                Int      @id @default(autoincrement())
   invoiceId         Int      // معرف الفاتورة
   productType       String   // نوع المنتج: silk_strip, iron, wire
-  productId         Int      // معرف المنتج
+  productId         Int?     // معرف المنتج (اختياري للمنتجات غير المخزنة)
+  productName       String?  // اسم المنتج (للمنتجات غير المخزنة)
   quantity          Float    // الكمية
   purchasePrice     Float    // سعر الشراء (من unitPrice للمنتج)
   sellingPrice      Float    // سعر البيع

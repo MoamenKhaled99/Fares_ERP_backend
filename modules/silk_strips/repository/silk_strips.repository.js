@@ -2,9 +2,9 @@ import { getPrisma } from "../../../config/prismaClient.js";
 
 const prisma = getPrisma();
 
-export async function getAllSilkStrips() {
+export async function getAllSilkStrips(search = '') {
   return await prisma.SilkStrip.findMany({
-    orderBy: { createdAt: 'desc' },
+    orderBy: { loadCapacity: 'asc' },
   });
 }
 

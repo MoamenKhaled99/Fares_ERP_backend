@@ -7,6 +7,7 @@ import SilkStripRoute from "./modules/silk_strips/presentation/silk_strips.route
 import StockRoute from "./modules/stock/presentation/stock.route.js";
 import InvoiceRoute from "./modules/invoices/presentation/invoices.route.js";
 import DashboardRoute from "./modules/dashboard/presentation/dashboard.route.js";
+import SafetyFactorRateRoute from "./modules/safety_factor_rates/presentation/safety_factor_rates.route.js";
 
 import globalErrorFilter from "./shared/filters/global_error.filter.js";
 
@@ -24,6 +25,7 @@ app.use("/silk-strips", SilkStripRoute);
 app.use("/stock", StockRoute);
 app.use("/invoices", InvoiceRoute);
 app.use("/dashboard", DashboardRoute);
+app.use("/safety-factor-rates", SafetyFactorRateRoute);
 
 app.use(globalErrorFilter);
 

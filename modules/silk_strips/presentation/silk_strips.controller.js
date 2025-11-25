@@ -21,7 +21,8 @@ async function addSilkStripsController(req, res) {
 }
 
 async function getAllSilkStripsController(req, res) {
-  const silkStrips = await fetchAllSilkStrips();
+  const { search } = req.query;
+  const silkStrips = await fetchAllSilkStrips(search || '');
   res.status(200).json(silkStrips);
 }
 

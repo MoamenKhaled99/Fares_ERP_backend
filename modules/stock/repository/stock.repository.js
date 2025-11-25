@@ -58,22 +58,26 @@ export async function deleteStockMovement(id) {
   });
 }
 
-// جلب رصيد المنتج الحالي
+// جلب رصيد المنتج الحالي مع اسم المنتج
 export async function getProductBalance(productType, productId) {
   if (productType === "silk_strip") {
-    return await prisma.SilkStrip.findUnique({
+    const product = await prisma.silkStrip.findUnique({
       where: { id: productId },
-      select: { totalQuantity: true, balance: true, unitPrice: true }, // ✅ Added unitPrice
+      select: { totalQuantity: true, balance: true, unitPrice: true, displayName: true, loadCapacity: true, unitMeter: true, safetyFactor: true },
     });
+    if (product && !product.displayName) {
+      product.displayName = `${product.loadCapacity} x ${product.unitMeter} x ${product.safetyFactor}`;
+    }
+    return product;
   } else if (productType === "iron") {
-    return await prisma.Iron.findUnique({
+    return await prisma.iron.findUnique({
       where: { id: productId },
-      select: { totalQuantity: true, balance: true, unitPrice: true }, // ✅ Added unitPrice
+      select: { totalQuantity: true, balance: true, unitPrice: true, description: true },
     });
   } else if (productType === "wire") {
-    return await prisma.Wire.findUnique({
+    return await prisma.wire.findUnique({
       where: { id: productId },
-      select: { totalQuantity: true, balance: true, unitPrice: true }, // ✅ Added unitPrice
+      select: { totalQuantity: true, balance: true, unitPrice: true, description: true },
     });
   }
   return null;

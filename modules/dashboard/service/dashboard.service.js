@@ -6,9 +6,10 @@ import {
 
 /**
  * Service to get dashboard statistics
+ * @param {Object} filters - Filter object { day, month, year }
  */
-export async function getDashboardStats() {
-  return await getDashboardStatsRepo();
+export async function getDashboardStats(filters = {}) {
+  return await getDashboardStatsRepo(filters);
 }
 
 /**

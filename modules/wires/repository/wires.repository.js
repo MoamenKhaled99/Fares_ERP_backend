@@ -2,8 +2,18 @@ import { getPrisma } from "../../../config/prismaClient.js";
 
 const prisma = getPrisma();
 
-export async function getAllWires() {
+export async function getAllWires(search = '') {
+  const whereClause = search
+    ? {
+        description: { 
+          contains: search, 
+          mode: 'insensitive' 
+        }
+      }
+    : {};
+
   return await prisma.Wire.findMany({
+    where: whereClause,
     orderBy: { createdAt: 'desc' },
   });
 }

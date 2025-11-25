@@ -2,8 +2,18 @@ import {getPrisma} from "../../../config/prismaClient.js";
 
 const prisma = getPrisma();
 
-export async function getAllIrons() {
+export async function getAllIrons(search = '') {
+  const whereClause = search
+    ? {
+        description: { 
+          contains: search, 
+          mode: 'insensitive' 
+        }
+      }
+    : {};
+
   return await prisma.Iron.findMany({
+    where: whereClause,
     orderBy: { createdAt: 'desc' },
   });
 }

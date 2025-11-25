@@ -1,6 +1,5 @@
 export function validateSilkStrip(silkStrip) {
   const requiredFields = [
-    "unitPrice",
     "totalQuantity",
     "loadCapacity",
     "safetyFactor",
@@ -19,7 +18,17 @@ export function validateSilkStrip(silkStrip) {
     throw err;
   }
 
-  const numberFields = ["loadCapacity", "safetyFactor", "unitMeter", "unitPrice", "totalQuantity"];
+  // Validate safetyFactor as string enum
+  const validSafetyFactors = ["1:5", "1:6", "1:7"];
+  if (!validSafetyFactors.includes(silkStrip.safetyFactor)) {
+    const err = {
+      message: `safetyFactor must be one of: ${validSafetyFactors.join(", ")}`,
+      type: "ValidationError",
+    };
+    throw err;
+  }
+
+  const numberFields = ["loadCapacity", "unitMeter", "totalQuantity"];
   for (const field of numberFields) {
     if (field in silkStrip && (typeof silkStrip[field] !== "number" || isNaN(silkStrip[field]))) {
       const err = {
@@ -45,8 +54,21 @@ export function validateSilkStripId(id) {
 }
 
 export function validateSilkStripUpdate(silkStrip) {
-  // للتحديث، جميع الحقول اختيارية لكن إذا وجدت يجب أن تكون رقم
-  const numberFields = ["loadCapacity", "safetyFactor", "unitMeter", "unitPrice", "totalQuantity"];
+  // للتحديث، جميع الحقول اختيارية لكن إذا وجدت يجب أن تكون صحيحة
+  
+  // Validate safetyFactor if provided
+  if (silkStrip.safetyFactor !== undefined) {
+    const validSafetyFactors = ["1:5", "1:6", "1:7"];
+    if (!validSafetyFactors.includes(silkStrip.safetyFactor)) {
+      const err = {
+        message: `safetyFactor must be one of: ${validSafetyFactors.join(", ")}`,
+        type: "ValidationError",
+      };
+      throw err;
+    }
+  }
+  
+  const numberFields = ["loadCapacity", "unitMeter", "totalQuantity"];
   for (const field of numberFields) {
     if (field in silkStrip && (typeof silkStrip[field] !== "number" || isNaN(silkStrip[field]))) {
       const err = {

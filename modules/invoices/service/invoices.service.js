@@ -46,12 +46,39 @@ export async function createInvoiceService(data) {
 
   const processedDetails = [];
   let totalProfit = 0;
+  const invoiceType = data.invoiceType || "regular";
+  const isNonStock = invoiceType === "non-stock";
 
   for (const detail of data.details) {
-    const { productType, productId, quantity, sellingPrice } = detail;
+    const { productType, productId, productName, quantity, sellingPrice } = detail;
+    let purchasePrice = detail.purchasePrice;
 
-    // 1. Fetch current product data for stock, balance, and unitPrice
-    // NOTE: getProductBalance in stock.repository.js must be updated to fetch unitPrice
+    // For non-stock invoices, skip product lookup and stock management
+    if (isNonStock) {
+      if (!purchasePrice) {
+        const err = {
+          message: "purchasePrice is required for non-stock invoice items",
+          type: "ValidationError",
+        };
+        throw err;
+      }
+
+      const profit = (sellingPrice - purchasePrice) * quantity;
+      totalProfit += profit;
+
+      processedDetails.push({
+        productType,
+        productId: null,
+        productName,
+        quantity,
+        purchasePrice,
+        sellingPrice,
+        profit,
+      });
+      continue;
+    }
+
+    // Regular invoice: fetch product and check stock
     const product = await getProductBalance(productType, productId);
 
     if (!product) {
@@ -65,21 +92,23 @@ export async function createInvoiceService(data) {
     // ✅ STOCK CHECK: Do not proceed if requested quantity > current stock
     if (quantity > product.totalQuantity) {
       const err = {
-        message: `المخزون غير كافٍ للمنتج برقم ${productId} (${productType}). المتوفر: ${product.totalQuantity}، المطلوب: ${quantity}`, // 👈 Arabic Message        type: "BusinessLogicError", // Throws a 409 Conflict error
+        message: `المخزون غير كافٍ للمنتج برقم ${productId} (${productType}). المتوفر: ${product.totalQuantity}، المطلوب: ${quantity}`,
+        type: "BusinessLogicError",
       };
       throw err;
     }
 
-    // 2. Determine purchasePrice: use price from payload, or product's current unitPrice
-    const purchasePrice = detail.purchasePrice || product.unitPrice;
+    // Determine purchasePrice: use price from payload, or product's current unitPrice
+    purchasePrice = purchasePrice || product.unitPrice;
 
-    // 3. Calculate profit
+    // Calculate profit
     const profit = (sellingPrice - purchasePrice) * quantity;
     totalProfit += profit;
 
     processedDetails.push({
       productType,
       productId,
+      productName: product.displayName || product.description || null,
       quantity,
       purchasePrice,
       sellingPrice,
@@ -87,43 +116,53 @@ export async function createInvoiceService(data) {
     });
   }
 
-  // 4. Create invoice and process stock movements
+  // Set invoiceDate: use provided date or default to now
+  const invoiceDate = data.invoiceDate ? new Date(data.invoiceDate) : new Date();
+
+  // Create invoice
   const invoice = await createInvoice({
+    invoiceDate,
+    invoiceType,
     totalProfit,
     notes: data.notes,
     details: processedDetails,
   });
 
-  // لكل عنصر في الفاتورة: تقليل الكمية من المنتج وإنشاء حركة مخزون
-  for (const detail of processedDetails) {
-    const { productType, productId, quantity, purchasePrice } = detail;
+  // For regular invoices, process stock movements
+  if (!isNonStock) {
+    for (const detail of processedDetails) {
+      const { productType, productId, quantity, purchasePrice } = detail;
 
-    // Fetch current state again in case of concurrent access
-    const currentBalance = await getProductBalance(productType, productId);
-    if (currentBalance) {
-      // حساب الكمية والرصيد الجديدة
-      const newQuantity = Math.max(0, currentBalance.totalQuantity - quantity);
+      if (productId) {
+        // Fetch current state again in case of concurrent access
+        const currentBalance = await getProductBalance(productType, productId);
+        if (currentBalance) {
+          // حساب الكمية والرصيد الجديدة
+          const newQuantity = Math.max(0, currentBalance.totalQuantity - quantity);
 
-      // Calculate new balance: remaining quantity * original purchase price (simplistic cost valuation)
-      const newBalance = newQuantity * purchasePrice;
+          // Calculate new balance: remaining quantity * original purchase price
+          const newBalance = newQuantity * purchasePrice;
 
-      // تحديث رصيد المنتج
-      await updateProductBalance(
-        productType,
-        productId,
-        newQuantity,
-        newBalance
-      );
+          // تحديث رصيد المنتج
+          await updateProductBalance(
+            productType,
+            productId,
+            newQuantity,
+            newBalance
+          );
 
-      // إنشاء حركة مخزون (خروج)
-      await createStockMovement({
-        productType,
-        productId,
-        quantity,
-        movementType: "out",
-        purchasePrice,
-        notes: `Invoice #${invoice.id} - Outgoing movement`,
-      });
+          // إنشاء حركة مخزون (خروج)
+          await createStockMovement({
+            productType,
+            productId,
+            productName: detail.productName,
+            quantity,
+            movementType: "out",
+            purchasePrice,
+            notes: `Invoice #${invoice.id} - Outgoing movement`,
+          });
+        }
+      }
     }
   }
 

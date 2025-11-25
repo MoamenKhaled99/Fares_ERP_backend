@@ -18,28 +18,35 @@ export async function getAllInvoices(filters = {}) {
     }
   }
   
-  return await prisma.Invoice.findMany({
+  const invoices = await prisma.Invoice.findMany({
     where: whereClause,
     include: {
       details: true,
     },
-    orderBy: { invoiceDate: 'desc' }, // Changed from createdAt to invoiceDate
+    orderBy: { invoiceDate: 'desc' },
   });
+
+  return await enrichInvoicesWithProductNames(invoices);
 }
 // جلب فاتورة بواسطة ID
 export async function getInvoiceById(id) {
-  return await prisma.Invoice.findUnique({
+  const invoice = await prisma.Invoice.findUnique({
     where: { id: parseInt(id) },
     include: {
       details: true,
     },
   });
+  if (!invoice) return null;
+  const [enriched] = await enrichInvoicesWithProductNames([invoice]);
+  return enriched;
 }
 
 // إنشاء فاتورة جديدة
 export async function createInvoice(data) {
   return await prisma.Invoice.create({
     data: {
+      invoiceDate: data.invoiceDate || new Date(), // Always provide invoiceDate
+      invoiceType: data.invoiceType || 'regular',
       totalProfit: data.totalProfit || 0,
       notes: data.notes,
       details: {
@@ -81,5 +88,45 @@ export async function calculateTotalProfits() {
     },
   });
   return result._sum.totalProfit || 0;
+}
+
+// Helper: enrich invoices' details with product names (displayName / description) when missing
+async function enrichInvoicesWithProductNames(invoices) {
+  // Collect needed product IDs per type only where productName is null/empty
+  const silkIds = new Set();
+  const ironIds = new Set();
+  const wireIds = new Set();
+
+  for (const inv of invoices) {
+    for (const d of inv.details) {
+      if (!d.productName || d.productName.trim() === '') {
+        if (d.productId && d.productType === 'silk_strip') silkIds.add(d.productId);
+        else if (d.productId && d.productType === 'iron') ironIds.add(d.productId);
+        else if (d.productId && d.productType === 'wire') wireIds.add(d.productId);
+      }
+    }
+  }
+
+  // Fetch only required products
+  const [silks, irons, wires] = await Promise.all([
+    silkIds.size ? prisma.SilkStrip.findMany({ where: { id: { in: [...silkIds] } }, select: { id: true, displayName: true } }) : Promise.resolve([]),
+    ironIds.size ? prisma.Iron.findMany({ where: { id: { in: [...ironIds] } }, select: { id: true, description: true } }) : Promise.resolve([]),
+    wireIds.size ? prisma.Wire.findMany({ where: { id: { in: [...wireIds] } }, select: { id: true, description: true } }) : Promise.resolve([]),
+  ]);
+
+  const silkMap = new Map(silks.map(s => [s.id, s.displayName || `شريط حريري #${s.id}`]));
+  const ironMap = new Map(irons.map(i => [i.id, i.description || `حدايد #${i.id}`]));
+  const wireMap = new Map(wires.map(w => [w.id, w.description || `واير #${w.id}`]));
+
+  for (const inv of invoices) {
+    for (const d of inv.details) {
+      if (!d.productName || d.productName.trim() === '') {
+        if (d.productType === 'silk_strip' && silkMap.has(d.productId)) d.productName = silkMap.get(d.productId);
+        else if (d.productType === 'iron' && ironMap.has(d.productId)) d.productName = ironMap.get(d.productId);
+        else if (d.productType === 'wire' && wireMap.has(d.productId)) d.productName = wireMap.get(d.productId);
+      }
+    }
+  }
+  return invoices;
 }
 

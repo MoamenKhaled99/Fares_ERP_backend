@@ -21,7 +21,8 @@ async function addWiresController(req, res) {
 }
 
 async function getAllWiresController(req, res) {
-  const wires = await fetchAllWires();
+  const { search } = req.query;
+  const wires = await fetchAllWires(search || '');
   res.status(200).json(wires);
 }
 

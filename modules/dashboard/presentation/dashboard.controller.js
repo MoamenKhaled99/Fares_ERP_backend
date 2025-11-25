@@ -8,10 +8,18 @@ import { successResponse } from '../../../shared/utils/calculation.utils.js';
 
 /**
  * GET /api/dashboard
- * Returns comprehensive dashboard statistics
+ * Returns comprehensive dashboard statistics with optional filters
+ * Query params: day, month, year
  */
 export const getDashboardStatsController = asyncHandler(async (req, res) => {
-  const stats = await getDashboardStats();
+  const filters = {};
+  
+  // Extract query parameters for filtering
+  if (req.query.day) filters.day = parseInt(req.query.day);
+  if (req.query.month) filters.month = parseInt(req.query.month);
+  if (req.query.year) filters.year = parseInt(req.query.year);
+  
+  const stats = await getDashboardStats(filters);
   res.json(successResponse(stats, 'Dashboard statistics fetched successfully'));
 });
 

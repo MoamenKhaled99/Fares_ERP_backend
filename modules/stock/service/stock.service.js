@@ -71,6 +71,7 @@ export async function addIncomingMovement(data) {
   const movement = await createStockMovement({
     productType: data.productType,
     productId: data.productId,
+    productName: currentBalance.displayName || currentBalance.description,
     quantity: data.quantity,
     movementType: "in",
     purchasePrice: data.purchasePrice,
