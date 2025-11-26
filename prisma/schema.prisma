@@ -53,10 +53,21 @@ model Wire {
   updatedAt       DateTime @updatedAt
 }
 
+// ماكينات
+model Machine {
+  id              Int      @id @default(autoincrement())
+  description     String?  // الوصف
+  unitPrice       Float    // سعر الوحدة
+  totalQuantity   Float    @default(0) // إجمالي الكمية
+  balance         Float    @default(0) // الرصيد (الكمية × السعر)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
 // حركة المخزون
 model StockMovement {
   id                Int      @id @default(autoincrement())
-  productType       String   // نوع المنتج: silk_strip, iron, wire
+  productType       String   // نوع المنتج: silk_strip, iron, wire, machine
   productId         Int      // معرف المنتج
   productName       String?  // اسم المنتج أو الوصف
   quantity          Float    // الكمية
@@ -89,7 +100,7 @@ model Invoice {
 model InvoiceDetail {
   id                Int      @id @default(autoincrement())
   invoiceId         Int      // معرف الفاتورة
-  productType       String   // نوع المنتج: silk_strip, iron, wire
+  productType       String   // نوع المنتج: silk_strip, iron, wire, machine
   productId         Int?     // معرف المنتج (اختياري للمنتجات غير المخزنة)
   productName       String?  // اسم المنتج (للمنتجات غير المخزنة)
   quantity          Float    // الكمية

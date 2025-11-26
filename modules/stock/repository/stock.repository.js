@@ -79,6 +79,11 @@ export async function getProductBalance(productType, productId) {
       where: { id: productId },
       select: { totalQuantity: true, balance: true, unitPrice: true, description: true },
     });
+  } else if (productType === "machine") {
+    return await prisma.machine.findUnique({
+      where: { id: productId },
+      select: { totalQuantity: true, balance: true, unitPrice: true, description: true },
+    });
   }
   return null;
 }
@@ -104,6 +109,11 @@ export async function updateProductBalance(
     });
   } else if (productType === "wire") {
     return await prisma.Wire.update({
+      where: { id: productId },
+      data: updateData, // ✅ ONLY UPDATES quantity/balance
+    });
+  } else if (productType === "machine") {
+    return await prisma.Machine.update({
       where: { id: productId },
       data: updateData, // ✅ ONLY UPDATES quantity/balance
     });

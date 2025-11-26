@@ -18,10 +18,10 @@ export function validateStockMovement(movement) {
     throw err;
   }
 
-  const validProductTypes = ["silk_strip", "iron", "wire"];
+  const validProductTypes = ["silk_strip", "iron", "wire", "machine"];
   if (!validProductTypes.includes(movement.productType)) {
     const err = {
-      message: "Invalid productType. Must be: silk_strip, iron, or wire",
+      message: "Invalid productType. Must be: silk_strip, iron, wire, or machine",
       type: "ValidationError",
     };
     throw err;
@@ -55,10 +55,10 @@ export function validateStockMovement(movement) {
 }
 
 export function validateProductType(productType) {
-  const validTypes = ["silk_strip", "iron", "wire"];
+  const validTypes = ["silk_strip", "iron", "wire", "machine"];
   if (!validTypes.includes(productType)) {
     const err = {
-      message: "Invalid productType. Must be: silk_strip, iron, or wire",
+      message: "Invalid productType. Must be: silk_strip, iron, wire, or machine",
       type: "ValidationError",
     };
     throw err;

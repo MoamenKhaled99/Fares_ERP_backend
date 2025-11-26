@@ -36,7 +36,7 @@ export function validateInvoice(invoice) {
     throw err;
   }
 
-  const validProductTypes = ["silk_strip", "iron", "wire"];
+  const validProductTypes = ["silk_strip", "iron", "wire", "machine"];
   const isNonStock = invoice.invoiceType === "non-stock";
 
   for (const detail of invoice.details) {
@@ -45,7 +45,7 @@ export function validateInvoice(invoice) {
       !validProductTypes.includes(detail.productType)
     ) {
       const err = {
-        message: "Invalid productType. Must be: silk_strip, iron, or wire",
+        message: "Invalid productType. Must be: silk_strip, iron, wire, or machine",
         type: "ValidationError",
       };
       throw err;
